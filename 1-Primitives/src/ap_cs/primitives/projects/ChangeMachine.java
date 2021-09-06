@@ -6,8 +6,6 @@
 package ap_cs.primitives.projects;
 
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 public class ChangeMachine {
@@ -17,7 +15,11 @@ public class ChangeMachine {
     public static void exit() {
         exit = true;
     }
+    public static boolean shouldExit() {
+        return exit;
+    }
 
+    private static final int CENTS_PER_DOLLAR = 100;
     public static int calcTotalCents(double total) {
         return (int) (total * CENTS_PER_DOLLAR);
     }
@@ -31,8 +33,9 @@ public class ChangeMachine {
     }
 
     public static void main(String[] args) {
-        while (!exit) {
-            runChange();
+        Currency c = retrieveCurrency(args);
+        while (!shouldExit()) {
+            runChange(c);
         }
         closeIO();
     }
@@ -46,6 +49,13 @@ public class ChangeMachine {
     }
 
     private static final String exitMsg = "exit";
+
+    public static Currency retrieveCurrency(String[] args) {
+        if (args.length <= 1) {
+            return Currency.USD;
+        }
+        return Currency.valueOf(args[0].toUpperCase());
+    }
 
     public static double retrieveDouble(String msg) {
         output.println(msg);
@@ -62,44 +72,13 @@ public class ChangeMachine {
             }
         }
     }
+    // cents per bill size
+    private static final Integer[] relations = {10000, 5000, 2000, 1000, 500, 100, 25, 10, 5, 1};
+    // bill size types
+    private static final String[] sizes = {"hundreds", "fifties", "twenties", "tens", "fives", "dollars", "quarters", "dimes", "nickels", "pennies"};
 
-    private static final int CENTS_PER_HUNDREDS = 10000;
-    private static final String SIZE_HUNDREDS = "hundreds";
-    private static final int CENTS_PER_FIFTY = 5000;
-    private static final String SIZE_FIFTIES = "fifties";
-    private static final int CENTS_PER_TWENTY = 2000;
-    private static final String SIZE_TWENTIES = "twenties";
-    private static final int CENTS_PER_TEN = 1000;
-    private static final String SIZE_TENS = "tens";
-    private static final int CENTS_PER_FIVE = 500;
-    private static final String SIZE_FIVES = "fives";
-    private static final int CENTS_PER_DOLLAR = 100;
-    private static final String SIZE_DOLLARS = "dollars";
-    private static final int CENTS_PER_QUARTER = 25;
-    private static final String SIZE_QUARTERS = "quarters";
-    private static final int CENTS_PER_DIME = 10;
-    private static final String SIZE_DIMES = "dimes";
-    private static final int CENTS_PER_PENNY = 1;
-    private static final String SIZE_PENNIES = "pennies";
-
-    // bill size type -> cents per bill size
-    private static final Map<String, Integer> relations = Map.of(
-            SIZE_HUNDREDS, CENTS_PER_HUNDREDS,
-            SIZE_FIFTIES, CENTS_PER_FIFTY,
-            SIZE_TWENTIES, CENTS_PER_TWENTY,
-            SIZE_TENS, CENTS_PER_TEN,
-            SIZE_FIVES, CENTS_PER_FIVE,
-            SIZE_DOLLARS, CENTS_PER_DOLLAR,
-            SIZE_QUARTERS, CENTS_PER_QUARTER,
-            SIZE_DIMES, CENTS_PER_DIME,
-            SIZE_PENNIES, CENTS_PER_PENNY
-    );
-
-    // all different bill size types
-    private static final String[] sizes = {SIZE_HUNDREDS, SIZE_FIFTIES, SIZE_TWENTIES, SIZE_TENS, SIZE_FIVES, SIZE_DOLLARS, SIZE_QUARTERS, SIZE_DIMES, SIZE_PENNIES};
-
-    public static void runChange() {
-        double total = retrieveDouble("Enter amount in <dollars>.<cents> form:");
+    public static void runChange(Currency c) {
+        double total = retrieveDouble(String.format("Enter amount in %s:", c.getName()));
         if (exit) {
             return;
         }
@@ -123,11 +102,11 @@ public class ChangeMachine {
     // fillStack assigns each individual bill size its calculated amount inside the money stack.
     // The calculation is based on the total amount of cents that were the initial input.
     public static void fillStack(ChangeStack stack) {
-        for (int i = 0; i < sizes.length; i++) {
-            int relation = relations.get(sizes[i]);
+        for (int idx = 0; idx < sizes.length; idx++) {
+            int relation = relations[idx];
             int count = calculate(relation);
             if (count > 0) {
-                stack.putCount(sizes[i], count);
+                stack.putCount(sizes[idx], count);
             }
         }
     }
@@ -135,32 +114,12 @@ public class ChangeMachine {
     // printStack uses the given stack of bill sizes and their corresponding counts to loop through them and print them
     // to the standard output.
     public static void printStack(ChangeStack stack) {
-        for (int i = 0; i < sizes.length; i++) {
-            String billSize = sizes[i];
+        for (int idx = 0; idx < sizes.length; idx++) {
+            String billSize = sizes[idx];
             if (stack.hasCount(billSize)) {
-                int count = stack.getCount(sizes[i]);
+                int count = stack.getCount(sizes[idx]);
                 output.printf("%d %s\n", count, billSize);
             }
         }
-    }
-}
-
-class ChangeStack {
-    private Map<String, Integer> counts;
-
-    public ChangeStack() {
-        counts = new HashMap<String, Integer>();
-    }
-
-    public void putCount(String billType, int count) {
-        counts.put(billType, count);
-    }
-
-    public int getCount(String billType) {
-        return counts.get(billType);
-    }
-
-    public boolean hasCount(String billType) {
-        return counts.containsKey(billType);
     }
 }
